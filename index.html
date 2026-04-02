@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>AyangeTV</title>
+    <meta name="description" content="AyangeTV - IPTV Player">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📺</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <h1>AyangeTV</h1>
+        </div>
+        <ul class="nav-list">
+            <li class="nav-item active" data-tab="live" onclick="switchTab('live')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><path d="M8.5 16.5a5 5 0 010-9"/><path d="M15.5 16.5a5 5 0 000-9"/><path d="M5.5 19.5a9 9 0 010-15"/><path d="M18.5 19.5a9 9 0 000-15"/></svg>
+                Live TV
+            </li>
+            <li class="nav-item" data-tab="movies" onclick="switchTab('movies')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/></svg>
+                Movies
+            </li>
+            <li class="nav-item" data-tab="series" onclick="switchTab('series')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3l-4 4-4-4"/></svg>
+                Series
+            </li>
+            <li class="nav-item" data-tab="search" onclick="switchTab('search')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Search
+            </li>
+            <li class="nav-item" data-tab="favorites" onclick="switchTab('favorites')">
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                Favorites
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Mobile bottom nav -->
+    <nav id="mobile-nav">
+        <button class="mob-tab active" data-tab="live" onclick="switchTab('live')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><path d="M8.5 16.5a5 5 0 010-9"/><path d="M15.5 16.5a5 5 0 000-9"/></svg>
+            <span>Live</span>
+        </button>
+        <button class="mob-tab" data-tab="movies" onclick="switchTab('movies')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/></svg>
+            <span>Movies</span>
+        </button>
+        <button class="mob-tab" data-tab="series" onclick="switchTab('series')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3l-4 4-4-4"/></svg>
+            <span>Series</span>
+        </button>
+        <button class="mob-tab" data-tab="search" onclick="switchTab('search')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span>Search</span>
+        </button>
+        <button class="mob-tab" data-tab="favorites" onclick="switchTab('favorites')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span>Favs</span>
+        </button>
+    </nav>
+
+    <!-- Main content -->
+    <main id="main">
+        <!-- Breadcrumb -->
+        <div id="breadcrumb" class="hidden">
+            <button onclick="goBack()" class="back-btn">&larr; Back</button>
+            <span id="breadcrumb-text"></span>
+        </div>
+
+        <div id="content"></div>
+    </main>
+
+    <!-- Fullscreen Player -->
+    <div id="player-overlay" class="hidden">
+        <div id="player-topbar">
+            <button onclick="closePlayer()" class="player-close">&times;</button>
+            <span id="player-title"></span>
+            <div id="channel-nav" class="hidden">
+                <button onclick="prevChannel()" id="prev-ch-btn" class="ch-btn">&laquo; Prev</button>
+                <span id="channel-counter"></span>
+                <button onclick="nextChannel()" id="next-ch-btn" class="ch-btn">Next &raquo;</button>
+            </div>
+        </div>
+        <video id="video-player" controls autoplay></video>
+        <div id="player-error" class="hidden">
+            <div class="error-icon">&#9888;</div>
+            <p id="player-error-msg">Playback failed</p>
+            <button onclick="tryNextLink()" id="try-next-btn" class="btn">Try Next Format</button>
+            <button onclick="closePlayer()" class="btn btn-secondary">Close</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
