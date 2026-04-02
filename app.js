@@ -1,9 +1,19 @@
 // ─── Config ───
+const IPTV_SERVER = 'http://line.tsclean.cc';
 const CONFIG = {
-    server: 'http://line.tsclean.cc',
     username: 'a4381e5399',
     password: '8cc5c756bd08'
 };
+
+// CORS proxy for API calls (needed when hosted on HTTPS like GitHub Pages)
+// The IPTV server is HTTP-only, browsers block mixed content from HTTPS pages
+const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const PROXY = IS_LOCAL ? '' : 'https://corsproxy.io/?url=';
+
+function proxyURL(url) {
+    if (IS_LOCAL) return url;
+    return PROXY + encodeURIComponent(url);
+}
 
 // ─── State ───
 let currentTab = 'live';
@@ -26,7 +36,7 @@ function apiURL(action, extra = {}) {
         action
     });
     Object.entries(extra).forEach(([k, v]) => params.set(k, v));
-    return `${CONFIG.server}/player_api.php?${params}`;
+    return proxyURL(`${IPTV_SERVER}/player_api.php?${params}`);
 }
 
 async function api(action, extra = {}) {
@@ -34,14 +44,16 @@ async function api(action, extra = {}) {
     return res.json();
 }
 
+// Stream URLs — these go direct (not proxied) since the video player handles redirects
+// For HTTPS pages, we still need proxy for the initial request
 function liveURL(streamID, ext = 'm3u8') {
-    return `${CONFIG.server}/live/${CONFIG.username}/${CONFIG.password}/${streamID}.${ext}`;
+    return proxyURL(`${IPTV_SERVER}/live/${CONFIG.username}/${CONFIG.password}/${streamID}.${ext}`);
 }
 function vodURL(streamID, ext) {
-    return `${CONFIG.server}/movie/${CONFIG.username}/${CONFIG.password}/${streamID}.${ext}`;
+    return proxyURL(`${IPTV_SERVER}/movie/${CONFIG.username}/${CONFIG.password}/${streamID}.${ext}`);
 }
 function seriesURL(episodeID, ext) {
-    return `${CONFIG.server}/series/${CONFIG.username}/${CONFIG.password}/${episodeID}.${ext}`;
+    return proxyURL(`${IPTV_SERVER}/series/${CONFIG.username}/${CONFIG.password}/${episodeID}.${ext}`);
 }
 
 function vodLinks(streamID, ext) {

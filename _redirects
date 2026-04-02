@@ -1,0 +1,4 @@
+/api/*  http://line.tsclean.cc/:splat  200
+/live/*  http://line.tsclean.cc/live/:splat  200
+/movie/*  http://line.tsclean.cc/movie/:splat  200
+/series/*  http://line.tsclean.cc/series/:splat  200

@@ -1,0 +1,8 @@
+{
+    "rewrites": [
+        { "source": "/api/:path*", "destination": "http://line.tsclean.cc/:path*" },
+        { "source": "/live/:path*", "destination": "http://line.tsclean.cc/live/:path*" },
+        { "source": "/movie/:path*", "destination": "http://line.tsclean.cc/movie/:path*" },
+        { "source": "/series/:path*", "destination": "http://line.tsclean.cc/series/:path*" }
+    ]
+}
