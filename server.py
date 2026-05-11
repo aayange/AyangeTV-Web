@@ -4,6 +4,7 @@
 import http.server
 import urllib.request
 import urllib.error
+import gzip
 import json
 import os
 import re
@@ -114,10 +115,13 @@ class AyangeTVHandler(http.server.SimpleHTTPRequestHandler):
         target_url = IPTV_SERVER + self.path
         try:
             extra = {}
-            for header in ['Range', 'Accept', 'Accept-Encoding']:
+            for header in ['Range', 'Accept']:
                 val = self.headers.get(header)
                 if val:
                     extra[header] = val
+            # Force identity — upstream-side compression breaks the m3u8
+            # rewriter and saves no bytes when the proxy is co-located.
+            extra['Accept-Encoding'] = 'identity'
 
             resp = fetch_with_redirect(target_url, extra_headers=extra, timeout=60)
             content_type = resp.headers.get('Content-Type', 'application/octet-stream')
@@ -135,12 +139,29 @@ class AyangeTVHandler(http.server.SimpleHTTPRequestHandler):
                         or self.path.endswith('.m3u8'))
 
             if is_m3u8:
-                body = resp.read().decode('utf-8', errors='replace')
+                raw = resp.read()
                 resp.close()
 
-                # Check if we got an HTML error page instead of m3u8
-                if body.strip().startswith('<!') or body.strip().startswith('<html'):
-                    self.send_error(503, "Stream unavailable")
+                # Defensively decompress — some upstreams ignore identity.
+                if resp.headers.get('Content-Encoding') == 'gzip' or raw[:2] == b'\x1f\x8b':
+                    try:
+                        raw = gzip.decompress(raw)
+                    except OSError:
+                        pass
+
+                body = raw.decode('utf-8', errors='replace')
+                stripped = body.lstrip()
+
+                # Validate it's a real playlist. Empty / non-m3u8 bodies
+                # mean the upstream rejected us (datacenter IP block,
+                # session expired, channel offline) — surface a real error
+                # instead of feeding garbage to HLS.js.
+                if not stripped.startswith('#EXTM3U'):
+                    if stripped.startswith('<!') or stripped.startswith('<html'):
+                        self.send_error(503, "Stream unavailable")
+                    else:
+                        snippet = stripped[:120].replace('\n', ' ') if stripped else '(empty body)'
+                        self.send_error(502, f"Upstream returned no playlist: {snippet}")
                     return
 
                 # Record hash->backend for every segment
