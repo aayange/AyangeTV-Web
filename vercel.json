@@ -1,8 +1,9 @@
 {
     "rewrites": [
-        { "source": "/api/:path*", "destination": "http://line.tsclean.cc/:path*" },
+        { "source": "/player_api.php", "destination": "http://line.tsclean.cc/player_api.php" },
         { "source": "/live/:path*", "destination": "http://line.tsclean.cc/live/:path*" },
         { "source": "/movie/:path*", "destination": "http://line.tsclean.cc/movie/:path*" },
-        { "source": "/series/:path*", "destination": "http://line.tsclean.cc/series/:path*" }
+        { "source": "/series/:path*", "destination": "http://line.tsclean.cc/series/:path*" },
+        { "source": "/hls/:path*", "destination": "http://line.tsclean.cc/hls/:path*" }
     ]
 }
