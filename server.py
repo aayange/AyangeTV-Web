@@ -13,10 +13,28 @@ import threading
 import time
 from urllib.parse import urlparse, parse_qs, urlencode
 
+def _load_dotenv(path):
+    """Tiny dotenv loader so local dev works without external deps."""
+    if not os.path.exists(path):
+        return
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+            k, v = line.split('=', 1)
+            os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+
+
+_load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
+
 PORT = int(os.environ.get('PORT', 8080))
-IPTV_SERVER = "http://line.tsclean.cc"
-CONFIG_USER = "REDACTED"
-CONFIG_PASS = "REDACTED"
+IPTV_SERVER = os.environ.get('IPTV_SERVER', 'http://line.tsclean.cc')
+CONFIG_USER = os.environ.get('IPTV_USER', '')
+CONFIG_PASS = os.environ.get('IPTV_PASS', '')
+if not CONFIG_USER or not CONFIG_PASS:
+    print('WARNING: IPTV_USER / IPTV_PASS not set. '
+          'Create a .env file locally or set env vars in your hosting dashboard.')
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 # OpenSubtitles requires a User-Agent identifying the app — they reject the browser default.
 OS_USER_AGENT = "AyangeTV v1.0"
@@ -94,8 +112,13 @@ class AyangeTVHandler(http.server.SimpleHTTPRequestHandler):
             super().do_GET()
 
     def proxy_simple(self):
-        """Proxy API calls."""
-        target_url = IPTV_SERVER + self.path
+        """Proxy API calls. Inject creds into the query string so the frontend
+        doesn't carry them."""
+        parsed = urlparse(self.path)
+        qs = parse_qs(parsed.query)
+        qs['username'] = [CONFIG_USER]
+        qs['password'] = [CONFIG_PASS]
+        target_url = f"{IPTV_SERVER}{parsed.path}?{urlencode(qs, doseq=True)}"
         try:
             req = urllib.request.Request(target_url)
             req.add_header('User-Agent', USER_AGENT)
@@ -111,8 +134,18 @@ class AyangeTVHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(502, f"Proxy error: {e}")
 
     def proxy_stream(self):
-        """Proxy stream requests — manually follows redirects, rewrites m3u8, supports Range."""
-        target_url = IPTV_SERVER + self.path
+        """Proxy stream requests — manually follows redirects, rewrites m3u8, supports Range.
+
+        Accepts both new short URLs (/live/{id}.{ext}) and legacy URLs that
+        already include credentials (/live/{user}/{pass}/{id}.{ext}).
+        Short form gets credentials injected from env vars."""
+        path_only = self.path.split('?')[0]
+        m = re.match(r'^/(live|movie|series)/([^/]+)$', path_only)
+        if m:
+            kind, fname = m.group(1), m.group(2)
+            target_url = f"{IPTV_SERVER}/{kind}/{CONFIG_USER}/{CONFIG_PASS}/{fname}"
+        else:
+            target_url = IPTV_SERVER + self.path
         try:
             extra = {}
             for header in ['Range', 'Accept']:

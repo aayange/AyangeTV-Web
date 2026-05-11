@@ -1,6 +1,7 @@
 // ─── Config ───
+// Credentials are injected server-side by the proxy in server.py. The
+// frontend never carries the IPTV username/password.
 const IPTV_SERVER = '';
-const CONFIG = { username: 'REDACTED', password: 'REDACTED' };
 
 // ─── State ───
 let currentTab = 'movies';
@@ -41,7 +42,7 @@ function playRegistered(id) {
 
 // ─── API ───
 function apiURL(action, extra = {}) {
-    const params = new URLSearchParams({ username: CONFIG.username, password: CONFIG.password, action });
+    const params = new URLSearchParams({ action });
     Object.entries(extra).forEach(([k, v]) => params.set(k, v));
     return `${IPTV_SERVER}/player_api.php?${params}`;
 }
@@ -52,13 +53,13 @@ async function api(action, extra = {}) {
 }
 
 function liveURL(streamID, ext = 'm3u8') {
-    return `${IPTV_SERVER}/live/${CONFIG.username}/${CONFIG.password}/${streamID}.${ext}`;
+    return `${IPTV_SERVER}/live/${streamID}.${ext}`;
 }
 function vodURL(streamID, ext) {
-    return `${IPTV_SERVER}/movie/${CONFIG.username}/${CONFIG.password}/${streamID}.${ext}`;
+    return `${IPTV_SERVER}/movie/${streamID}.${ext}`;
 }
 function seriesURL(episodeID, ext) {
-    return `${IPTV_SERVER}/series/${CONFIG.username}/${CONFIG.password}/${episodeID}.${ext}`;
+    return `${IPTV_SERVER}/series/${episodeID}.${ext}`;
 }
 
 function vodLinks(streamID, ext) {
