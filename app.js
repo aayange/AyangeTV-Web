@@ -1246,13 +1246,29 @@ async function extractOSError(r) {
     return `${r.status} ${body || r.statusText || 'request failed'}`.trim().slice(0, 300);
 }
 
-function getOSKey() {
-    let key = localStorage.getItem('ayange_os_key_v2') || '';
+function getOSKey(forcePrompt = false) {
+    let key = forcePrompt ? '' : (localStorage.getItem('ayange_os_key_v2') || '');
     if (!key) {
         key = (prompt('Enter your OpenSubtitles API key (free at opensubtitles.com/api):') || '').trim();
         if (key) localStorage.setItem('ayange_os_key_v2', key);
+        else localStorage.removeItem('ayange_os_key_v2');
     }
     return key;
+}
+
+function changeOSKey() {
+    localStorage.removeItem('ayange_os_key_v2');
+    const key = getOSKey(true);
+    showSubStatus(key ? 'API key updated' : 'No key entered', !key);
+}
+
+// OpenSubtitles rejected the key — drop it so the next attempt re-prompts.
+function clearOSKeyOnAuthFail(status) {
+    if (status === 401 || status === 403) {
+        localStorage.removeItem('ayange_os_key_v2');
+        return true;
+    }
+    return false;
 }
 
 async function searchOpenSubs() {
@@ -1272,6 +1288,9 @@ async function searchOpenSubs() {
         const params = new URLSearchParams({ q: query, lang: 'en' });
         if (year) params.set('year', year);
         const r = await fetch('/subs/search?' + params, { headers: { 'X-OS-Key': key } });
+        if (clearOSKeyOnAuthFail(r.status)) {
+            throw new Error('API key rejected and cleared — click "Search OpenSubtitles" again to enter a new one.');
+        }
         if (!r.ok) throw new Error(await extractOSError(r));
         const data = await r.json();
         const list = data.data || [];
@@ -1306,6 +1325,9 @@ async function downloadOSSub(fileId, label) {
     showSubStatus('Downloading subtitle…');
     try {
         const r = await fetch('/subs/get?file_id=' + encodeURIComponent(fileId), { headers: { 'X-OS-Key': key } });
+        if (clearOSKeyOnAuthFail(r.status)) {
+            throw new Error('API key rejected and cleared — search again to re-enter it.');
+        }
         if (!r.ok) throw new Error(await extractOSError(r));
         const text = await r.text();
         attachSubtitle(label, 'en', ensureVtt(text));
